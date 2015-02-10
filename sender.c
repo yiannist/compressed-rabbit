@@ -33,33 +33,24 @@ int main(int argc, char **argv)
     amqp_channel_open(conn, 1);
     die_on_amqp_error(amqp_get_rpc_reply(conn), "Opening channel");
 
-    /*
-    amqp_basic_properties_t props = {
-        ._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG,
-        .content_type = amqp_cstring_bytes("text/plain"),
-        .delivery_mode = 2, // persistent mode
-    };
+    {
+        amqp_basic_properties_t props;
+        props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG;;
+        props.content_type = amqp_cstring_bytes("text/plain");
+        props.delivery_mode = 2; /* persistent delivery mode */
 
-    amqp_queue_declare(conn,
-                       1,
-                       amqp_cstring_bytes("archipelago"),
-                       0,
-                       1,
-                       0,
-                       0,
-                       AMQP_EMPTY_TABLE);
-    */
+        die_on_error(amqp_basic_publish(conn,
+                                        1,
+                                        amqp_cstring_bytes(""),
+                                        amqp_cstring_bytes("archipelago"),
+                                        0,
+                                        0,
+                                        &props,
+                                        amqp_cstring_bytes("cnanakos1")
+                                        ),
+                     "Publishing");
+    }
 
-    die_on_error(amqp_basic_publish(conn,
-                                    1,
-                                    amqp_cstring_bytes(""),
-                                    amqp_cstring_bytes("archipelago"),
-                                    0,
-                                    0,
-                                    NULL,
-                                    amqp_cstring_bytes("cnanakos1")
-                                    ),
-                 "Publishing");
     printf(" [x] Sent 'cnanakos'\n");
 
     die_on_amqp_error(amqp_channel_close(conn, 1, AMQP_REPLY_SUCCESS),
