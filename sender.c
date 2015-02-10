@@ -28,7 +28,8 @@ int main(int argc, char **argv)
         die("opening TCP socket");
     }
 
-    die_on_amqp_error(amqp_login(conn, "/", 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, "guest", "guest"),
+    die_on_amqp_error(amqp_login(conn, "/", 0, 131072, 0, AMQP_SASL_METHOD_PLAIN,
+                                 "guest", "guest"),
                       "Loggin in");
     amqp_channel_open(conn, 1);
     die_on_amqp_error(amqp_get_rpc_reply(conn), "Opening channel");
