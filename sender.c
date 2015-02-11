@@ -1,12 +1,7 @@
-#include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 
-#include <stdint.h>
 #include <amqp.h>
 #include <amqp_framing.h>
-
-#include <unistd.h>
 
 #include "example_utils.h"
 
@@ -15,6 +10,7 @@ int main(int argc, char **argv)
 {
     int sockfd;
     amqp_connection_state_t conn;
+    const char message[] = "Hello rabbit";
 
     conn = amqp_new_connection();
 
@@ -41,12 +37,12 @@ int main(int argc, char **argv)
                                         0,
                                         0,
                                         &props,
-                                        amqp_cstring_bytes("cnanakos1")
+                                        amqp_cstring_bytes(message)
                                         ),
                      "Publishing");
     }
 
-    printf(" [x] Sent 'cnanakos'\n");
+    printf(" [x] Sent '%s'\n", message);
 
     die_on_amqp_error(amqp_channel_close(conn, 1, AMQP_REPLY_SUCCESS),
                       "Closing channel");
