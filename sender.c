@@ -36,7 +36,7 @@ int main(int argc, char **argv)
 
     {
         amqp_basic_properties_t props;
-        props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG;;
+        props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG;
         props.content_type = amqp_cstring_bytes("text/plain");
         props.delivery_mode = 2; /* persistent delivery mode */
 
