@@ -6,7 +6,7 @@
 #include <amqp_framing.h>
 #include <lz4.h>
 
-#include "example_utils.h"
+#include "utils.h"
 
 int main(int argc, char **argv)
 {
