@@ -1,5 +1,5 @@
 TARGET = sender
-LIBS = -lrabbitmq
+LIBS = -lrabbitmq -llz4
 CC = gcc
 CFLAGS = -g -Wall
 
