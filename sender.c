@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <amqp.h>
@@ -24,7 +25,7 @@ int main(int argc, char **argv)
     amqp_connection_state_t conn;
     //amqp_basic_properties_t props;
 
-    const char *message = "hello hello hello hello hell el o";
+    const char* const message = "hello hello hello hello hell el o";
     const int message_bytes = strlen(message);
 
     printf(" <-- Message is: '%s' with size %d\n", message, message_bytes);
@@ -61,7 +62,7 @@ int main(int argc, char **argv)
 
     printf(" <-- AMQP raw data is ");
     print_hex_buffer(data.bytes, data.len);
-    printf("with size %d\n", data.len);
+    printf("with size %lu\n", data.len);
 
     die_on_error(amqp_basic_publish(conn,
                                     1,
