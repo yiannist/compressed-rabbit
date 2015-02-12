@@ -49,9 +49,11 @@ int main(int argc, char const *const *argv)
 
     while (1) {
         char *cmpBuf;
-        int cmpBytes;
+        int cmpBytes, message_bytes;
         amqp_rpc_reply_t res;
         amqp_envelope_t envelope;
+        LZ4_streamDecode_t* const lz4_stream_decode = LZ4_createStreamDecode();
+        char* const message = malloc(LZ4_COMPRESSBOUND(100));
 
         amqp_maybe_release_buffers(conn);
         res = amqp_consume_message(conn, &envelope, NULL, 0);
@@ -71,9 +73,13 @@ int main(int argc, char const *const *argv)
         }
         */
         printf(" --> Trying to uncompress...\n");
-        printf(" [x] Received '%s' with size %d\n", "foo", 42);
+        message_bytes = LZ4_decompress_safe_continue(lz4_stream_decode, cmpBuf,
+                                                     message, cmpBytes, 100);
+        printf(" [x] Received '%s' with size %d\n", message, message_bytes);
 
+        free(message);
         amqp_destroy_envelope(&envelope);
+        LZ4_freeStreamDecode(lz4_stream_decode);
     }
 
     die_on_amqp_error(amqp_channel_close(conn, 1, AMQP_REPLY_SUCCESS),
