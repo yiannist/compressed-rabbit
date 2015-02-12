@@ -5,7 +5,7 @@ import pika
 import sys
 
 data = str(sys.argv[1])
-print "Message is: '%s' with size %d" % (data, len(data))
+print " <-- Message is: '%s' with size %d" % (data, len(data))
 
 connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
 channel = connection.channel()
@@ -13,7 +13,7 @@ channel = connection.channel()
 channel.queue_declare(queue='archipelago')
 
 cmpData = lz4.compress(data)
-print "Compressed raw data is: [%r] with size %d" % (cmpData, len(cmpData))
+print " <-- Compressed raw data is: %r with size %d" % (cmpData, len(cmpData))
 
 channel.basic_publish(exchange='',
                       routing_key='archipelago',
