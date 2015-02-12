@@ -30,9 +30,10 @@ int main(int argc, char **argv)
 
     printf(" <-- Message is: '%s' with size %d\n", message, message_bytes);
 
-    //LZ4_stream_t* const lz4Stream = LZ4_createStream();
-    const char *cmpBuf = malloc(LZ4_COMPRESSBOUND(100));
-    const int cmpBytes = LZ4_compress(message, cmpBuf, strlen(message));
+    LZ4_stream_t* const lz4_stream = LZ4_createStream();
+    char* const cmpBuf = malloc(LZ4_COMPRESSBOUND(100));
+    const int cmpBytes =
+        LZ4_compress_continue(lz4_stream, message, cmpBuf, strlen(message));
 
     printf(" <-- Compressed raw data is ");
     print_hex_buffer(cmpBuf, cmpBytes);
@@ -87,6 +88,7 @@ int main(int argc, char **argv)
     die_on_error(amqp_destroy_connection(conn), "Ending connection");
 
     free(cmpBuf);
+    LZ4_freeStream(lz4_stream);
 
     return 0;
 }
