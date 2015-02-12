@@ -114,3 +114,13 @@ long long now_microseconds(void) {
   gettimeofday(&tv, NULL);
   return (long long) tv.tv_sec * 1000000 + (long long) tv.tv_usec;
 }
+
+void print_hex_buffer(char *buf, int bufBytes) {
+    int i;
+
+    for(i = 0; i < bufBytes; i++) {
+        printf("%02x", (unsigned int)(buf[i]));
+
+        if (i % 4 == 3) printf(" ");    // groups of 8: makes more readable
+    }
+}

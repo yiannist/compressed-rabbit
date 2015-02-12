@@ -8,17 +8,6 @@
 
 #include "example_utils.h"
 
-
-void print_hex_buffer(char *buf, int bufBytes) {
-    int i;
-
-    for(i = 0; i < bufBytes; i++) {
-        printf("%02x", (unsigned int)(buf[i]));
-
-        if (i % 4 == 3) printf(" ");    // groups of 8: makes more readable
-    }
-}
-
 int main(int argc, char **argv)
 {
     int sockfd;
