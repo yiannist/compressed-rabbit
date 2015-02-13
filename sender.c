@@ -10,23 +10,39 @@
 
 int main(int argc, char **argv)
 {
-    int sockfd;
+    int sockfd, compress;
     amqp_connection_state_t conn;
-    amqp_bytes_t queuename = amqp_cstring_bytes(argv[1]);
+    amqp_bytes_t queuename;
+    const char* message;
+    char *type, *cmpBuf;
+    int message_bytes, cmpBytes;
+    LZ4_stream_t* const lz4_stream = LZ4_createStream();
 
-    const char* const message = "hello hello hello hello hell el o";
-    const int message_bytes = strlen(message);
+    if (argc < 4) {
+        printf("Usage: ./sender <queuename> <message> <type>\n"
+               "    type : lz4/plain\n");
+        exit(1);
+    }
+
+    queuename = amqp_cstring_bytes(argv[1]);
+    message = argv[2];
+    message_bytes = strlen(message);
+    type = argv[3];
 
     printf(" <-- Message is: '%s' with size %d\n", message, message_bytes);
+    printf(" <-- Raw data is ");
+    print_hex_buffer((char *) message, message_bytes);
+    printf(" with size %d\n", message_bytes);
 
-    LZ4_stream_t* const lz4_stream = LZ4_createStream();
-    char* const cmpBuf = malloc(LZ4_COMPRESSBOUND(100));
-    const int cmpBytes =
-        LZ4_compress_continue(lz4_stream, message, cmpBuf, strlen(message));
-
-    printf(" <-- Compressed raw data is ");
-    print_hex_buffer(cmpBuf, cmpBytes);
-    printf("with size %d\n", cmpBytes);
+    compress = !strcmp("lz4", type);
+    if (compress) {
+        printf(" <-- Data should be compressed.\n");
+        cmpBuf = malloc(LZ4_COMPRESSBOUND(100));
+        cmpBytes = LZ4_compress_continue(lz4_stream, message, cmpBuf, strlen(message));
+    } else {
+        cmpBuf = (char *) message;
+        cmpBytes = message_bytes;
+    }
 
     // AMQP stuff
     conn = amqp_new_connection();
@@ -53,7 +69,7 @@ int main(int argc, char **argv)
 
     amqp_basic_properties_t props;
     props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG;
-    props.content_type = amqp_cstring_bytes("lz4");
+    props.content_type = amqp_cstring_bytes(type);
     props.delivery_mode = 2; // persistent delivery mode
 
     amqp_bytes_t data;
@@ -62,7 +78,7 @@ int main(int argc, char **argv)
 
     printf(" <-- AMQP raw data is ");
     print_hex_buffer(data.bytes, data.len);
-    printf("with size %lu\n", data.len);
+    printf(" with size %lu\n", data.len);
 
     die_on_error(amqp_basic_publish(conn,
                                     1,
@@ -75,7 +91,7 @@ int main(int argc, char **argv)
                                     ),
                  "Publishing");
 
-    printf(" [x] Sent lz4ified '%s'\n", message);
+    printf(" [x] Sent '%s' to '%s' queue\n", message, (char *) queuename.bytes);
 
     die_on_amqp_error(amqp_channel_close(conn, 1, AMQP_REPLY_SUCCESS),
                       "Closing channel");
@@ -83,7 +99,9 @@ int main(int argc, char **argv)
                       "Closing connection");
     die_on_error(amqp_destroy_connection(conn), "Ending connection");
 
-    free(cmpBuf);
+    if (compress) {
+        free(cmpBuf);
+    }
     LZ4_freeStream(lz4_stream);
 
     return 0;

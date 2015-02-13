@@ -12,7 +12,15 @@ int main(int argc, char const *const *argv)
 {
     int sockfd;
     amqp_connection_state_t conn;
-    amqp_bytes_t queuename = amqp_cstring_bytes(argv[1]);
+    amqp_bytes_t queuename;
+    LZ4_streamDecode_t* const lz4_stream_decode = LZ4_createStreamDecode();
+
+    if (argc < 2) {
+        printf("Usage: ./consumer <queuename>\n");
+        exit(1);
+    }
+
+    queuename = amqp_cstring_bytes(argv[1]);
 
     // AMQP stuff
     conn = amqp_new_connection();
@@ -51,11 +59,10 @@ int main(int argc, char const *const *argv)
 
     while (1) {
         char *cmpBuf;
-        int cmpBytes, message_bytes;
+        int cmpBytes, message_bytes, is_compressed;
         amqp_rpc_reply_t res;
         amqp_envelope_t envelope;
-        LZ4_streamDecode_t* const lz4_stream_decode = LZ4_createStreamDecode();
-        char *message = malloc(LZ4_COMPRESSBOUND(100));
+        char *message;
 
         amqp_maybe_release_buffers(conn);
         res = amqp_consume_message(conn, &envelope, NULL, 0);
@@ -67,13 +74,15 @@ int main(int argc, char const *const *argv)
         cmpBytes = (int) envelope.message.body.len;
         printf(" --> Received raw data: ");
         print_hex_buffer(cmpBuf, cmpBytes);
-        printf("with size %d\n", cmpBytes);
+        printf(" with size %d\n", cmpBytes);
 
         if (envelope.message.properties._flags & AMQP_BASIC_CONTENT_TYPE_FLAG) {
-            if (!strcmp("lz4",
-                        envelope.message.properties.content_type.bytes)) {
+            is_compressed =
+                !strcmp("lz4", envelope.message.properties.content_type.bytes);
+            if (is_compressed) {
                 printf(" --> Data is LZ4-compressed. Trying to uncompress"
                        "...\n");
+                message = malloc(LZ4_COMPRESSBOUND(100));
                 message_bytes = LZ4_decompress_safe_continue(lz4_stream_decode,
                                                              cmpBuf, message,
                                                              cmpBytes, 100);
@@ -84,9 +93,10 @@ int main(int argc, char const *const *argv)
         }
         printf(" [x] Received '%s' with size %d\n", message, message_bytes);
 
-        free(message);
+        if (is_compressed) {
+            free(message);
+        }
         amqp_destroy_envelope(&envelope);
-        LZ4_freeStreamDecode(lz4_stream_decode);
     }
 
     die_on_amqp_error(amqp_channel_close(conn, 1, AMQP_REPLY_SUCCESS),
@@ -94,6 +104,8 @@ int main(int argc, char const *const *argv)
     die_on_amqp_error(amqp_connection_close(conn, AMQP_REPLY_SUCCESS),
                       "Closing connection");
     die_on_error(amqp_destroy_connection(conn), "Ending connection");
+
+    LZ4_freeStreamDecode(lz4_stream_decode);
 
     return 0;
 }
