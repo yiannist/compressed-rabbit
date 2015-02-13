@@ -26,10 +26,11 @@ int main(int argc, char **argv)
 
     queuename = amqp_cstring_bytes(argv[1]);
     message = argv[2];
-    message_bytes = strlen(message);
+    message_bytes = strlen(message) + 1;
     type = argv[3];
 
-    printf(" <-- Message is: '%s' with size %d\n", message, message_bytes);
+    printf(" <-- Message is: '%s' with size %d (= %d + \\0)\n", message,
+           message_bytes, message_bytes - 1);
     printf(" <-- Raw data is ");
     print_hex_buffer((char *) message, message_bytes);
     printf(" with size %d\n", message_bytes);
@@ -38,7 +39,8 @@ int main(int argc, char **argv)
     if (compress) {
         printf(" <-- Data should be compressed.\n");
         cmpBuf = malloc(LZ4_COMPRESSBOUND(100));
-        cmpBytes = LZ4_compress_continue(lz4_stream, message, cmpBuf, strlen(message));
+        cmpBytes =
+            LZ4_compress_continue(lz4_stream, message, cmpBuf, strlen(message));
     } else {
         cmpBuf = (char *) message;
         cmpBytes = message_bytes;
