@@ -12,6 +12,7 @@ int main(int argc, char **argv)
 {
     int sockfd;
     amqp_connection_state_t conn;
+    amqp_bytes_t queuename = amqp_cstring_bytes(argv[1]);
 
     const char* const message = "hello hello hello hello hell el o";
     const int message_bytes = strlen(message);
@@ -40,9 +41,19 @@ int main(int argc, char **argv)
     amqp_channel_open(conn, 1);
     die_on_amqp_error(amqp_get_rpc_reply(conn), "Opening channel");
 
+    amqp_queue_declare(conn,
+                       1,
+                       queuename,
+                       0,
+                       1, // durable
+                       0,
+                       0,
+                       amqp_empty_table);
+    die_on_amqp_error(amqp_get_rpc_reply(conn), "Declaring queue");
+
     amqp_basic_properties_t props;
     props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG;
-    props.content_type = amqp_cstring_bytes("archipelago/lz4");
+    props.content_type = amqp_cstring_bytes("lz4");
     props.delivery_mode = 2; // persistent delivery mode
 
     amqp_bytes_t data;
@@ -56,7 +67,7 @@ int main(int argc, char **argv)
     die_on_error(amqp_basic_publish(conn,
                                     1,
                                     amqp_cstring_bytes(""),
-                                    amqp_cstring_bytes("archipelago"),
+                                    queuename,
                                     0,
                                     0,
                                     &props,
