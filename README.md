@@ -14,8 +14,11 @@ $ sudo rabbitmqctl list_queues
 
 For C peers:
 * rabbitmq-server
+* librabbitmq1 (for envelopes etc.; only available in jessie)
 * librabbitmq-dev
+* liblz4-1 (for streams; only available in jessie)
 * liblz4-dev
+* libmongo-client-dev
 
 For Python peers:
 * python-lz4
@@ -25,7 +28,7 @@ For Python peers:
 
 A Python peer (sender/receiver) _cannot_ communicate with a C peer
 (receiver/sender). That's because LZ4 compressed objects in Python have their
-size serialized in the header (4 bytes).
+size *serialized* in the header (4 bytes).
 
 An example:
 ```python
