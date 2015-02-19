@@ -1,7 +1,7 @@
 TARGETS = sender consumer
-LIBS = -lrabbitmq -llz4
+LIBS = -lrabbitmq -llz4 $(shell pkg-config --libs libmongo-client)
 CC = gcc
-CFLAGS = -g -Wall
+CFLAGS = -g -Wall $(shell pkg-config --cflags libmongo-client)
 
 .PHONY: default all clean distclean
 

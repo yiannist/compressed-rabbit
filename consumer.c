@@ -6,6 +6,7 @@
 #include <amqp.h>
 #include <amqp_framing.h>
 #include <lz4.h>
+#include <mongo.h>
 
 #include "utils.h"
 

@@ -1,4 +1,5 @@
-This repo is a playground for AMQP queues and LZ4 compression in C/Python.
+This repo is a playground for AMQP queues and LZ4 compression in C/Python. Be
+careful, the messages might end up in a MongoDB hole...
 
 # Usage
 ```bash
