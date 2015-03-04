@@ -39,7 +39,7 @@ int main(int argc, char **argv)
     compress = !strcmp("lz4", type);
     if (compress) {
         printf(" <-- Data should be compressed.\n");
-        cmpBuf = malloc(LZ4_COMPRESSBOUND(100));
+        cmpBuf = malloc(LZ4_COMPRESSBOUND(COMP_BUF_SIZE));
         cmpBytes =
             LZ4_compress_continue(lz4_stream, message, cmpBuf, strlen(message));
     } else {

@@ -51,6 +51,8 @@
  * ***** END LICENSE BLOCK *****
  */
 
+#define COMP_BUF_SIZE 2000000 // Max value is ~ 2 GB
+
 extern void die_on_error(int x, char const *context);
 extern void die_on_amqp_error(amqp_rpc_reply_t x, char const *context);
 
