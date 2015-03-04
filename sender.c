@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <time.h>
 
 #include <amqp.h>
 #include <amqp_framing.h>
@@ -18,17 +19,19 @@ int main(int argc, char **argv)
     char *type, *cmpBuf;
     int message_bytes, cmpBytes;
     LZ4_stream_t* const lz4_stream = LZ4_createStream();
+    struct timespec tik, tok, tic, toc;
+    double diff;
 
     if (argc < 4) {
-        printf("Usage: ./sender <queuename> <message> <type>\n"
+        printf("Usage: ./sender <queuename> <type> <message>\n"
                "    type : lz4/plain\n");
         exit(1);
     }
 
     queuename = amqp_cstring_bytes(argv[1]);
-    message = argv[2];
+    type = argv[2];
+    message = argv[3];
     message_bytes = strlen(message) + 1;
-    type = argv[3];
 
     printf(" <-- Message is: '%s' with size %d (= %d + \\0)\n", message,
            message_bytes, message_bytes - 1);
@@ -40,8 +43,14 @@ int main(int argc, char **argv)
     if (compress) {
         printf(" <-- Data should be compressed.\n");
         cmpBuf = malloc(LZ4_COMPRESSBOUND(COMP_BUF_SIZE));
+
+        clock_gettime(CLOCK_REALTIME, &tic);
         cmpBytes =
             LZ4_compress_continue(lz4_stream, message, cmpBuf, strlen(message));
+
+        clock_gettime(CLOCK_REALTIME, &toc);
+        diff = (toc.tv_sec - tic.tv_sec) + (toc.tv_nsec - tic.tv_nsec)/1E9;
+        printf(" [i] Compression latency was: %lf\n", diff);
     } else {
         cmpBuf = (char *) message;
         cmpBytes = message_bytes;
@@ -83,18 +92,23 @@ int main(int argc, char **argv)
     print_hex_buffer(data.bytes, data.len);
     printf(" with size %lu\n", data.len);
 
-    die_on_error(amqp_basic_publish(conn,
-                                    1,
-                                    amqp_cstring_bytes(""),
-                                    queuename,
-                                    0,
-                                    0,
-                                    &props,
-                                    data
-                                    ),
-                 "Publishing");
+
+    clock_gettime(CLOCK_REALTIME, &tik);
+    amqp_basic_publish(conn,
+		    1,
+		    amqp_cstring_bytes(""),
+		    queuename,
+		    0,
+		    0,
+		    &props,
+		    data
+		    );
+    clock_gettime(CLOCK_REALTIME, &tok);
+
+    diff = (tok.tv_sec - tik.tv_sec) + (tok.tv_nsec - tik.tv_nsec)/1E9;
 
     printf(" [x] Sent '%s' to '%s' queue\n", message, (char *) queuename.bytes);
+    printf(" [i] Communication latency was: %lf\n", diff);
 
     die_on_amqp_error(amqp_channel_close(conn, 1, AMQP_REPLY_SUCCESS),
                       "Closing channel");
