@@ -78,6 +78,9 @@ int main(int argc, char **argv)
                        amqp_empty_table);
     die_on_amqp_error(amqp_get_rpc_reply(conn), "Declaring queue");
 
+    // Put the channel in publisher-confirm mode
+    amqp_confirm_select(conn, 1);
+
     amqp_basic_properties_t props;
     props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG;
     props.content_type = amqp_cstring_bytes(type);
@@ -91,20 +94,55 @@ int main(int argc, char **argv)
     print_hex_buffer(data.bytes, data.len);
     printf(" with size %lu\n", data.len);
 
-
+    amqp_frame_t decoded_frame;
     clock_gettime(CLOCK_REALTIME, &tik);
     amqp_basic_publish(conn,
-		    1,
-		    amqp_cstring_bytes(""),
-		    queuename,
-		    0,
-		    0,
-		    &props,
-		    data
-		    );
+                       1,
+                       amqp_cstring_bytes(""),
+                       queuename,
+                       0,
+                       0,
+                       &props,
+                       data
+                       );
+    amqp_simple_wait_frame(conn, &decoded_frame);
     clock_gettime(CLOCK_REALTIME, &tok);
 
     printf(" [x] Sent '%s' to '%s' queue\n", message, (char *) queuename.bytes);
+
+    // Handling ACK as suggested:
+    // https://groups.google.com/forum/#!topic/rabbitmq-users/LOEBwpsE0kA
+    if (decoded_frame.frame_type == AMQP_FRAME_METHOD && decoded_frame.channel == 1) {
+        if (decoded_frame.payload.method.id == AMQP_BASIC_RETURN_METHOD) {
+            /* Message was published with mandatory = true and the message
+             * wasn't routed to a queue, so the message is returned */
+            amqp_message_t returned_message;
+            die_on_amqp_error(amqp_read_message(conn, 1, &returned_message, 0),
+                              "Message wasn't routed to a queue");
+            /* Do something with returned, free memory when done */
+            amqp_destroy_message(&returned_message);
+
+            /* look for the AMQP_BASIC_ACK_METHOD from the broker */
+            die_on_error(amqp_simple_wait_frame(conn, &decoded_frame),
+                         "Looking for AMQP_BASIC_ACK_METHOD from the broker FAILED");
+            if (decoded_frame.frame_type != AMQP_FRAME_METHOD || decoded_frame.channel != 1) {
+                /* something is probably wrong... handle it */
+                printf("Something bad happened\n");
+            }
+        }
+        if (decoded_frame.payload.method.id == AMQP_BASIC_ACK_METHOD) {
+            //amqp_basic_ack_t *a = (amqp_basic_ack_t*)decoded_frame.payload.method.decoded;
+            /* if you've kept a count of the messages you've published on the channel,
+             * the a->delivery_tag is the message serial being acknowledged.
+             * if a->multiple != 0, that means all messages up-to-and-including that message
+             * serial are being acknowledged */
+            printf(" [i] Message ACK'd\n");
+        } else {
+            /* You've received a different method, probably not what you want */
+            printf(" [i] Strange method received\n");
+        }
+    }
+
     printf(" [i] Compression latency was: %lf\n", diff);
 
     diff = (tok.tv_sec - tik.tv_sec) + (tok.tv_nsec - tik.tv_nsec)/1E9;
