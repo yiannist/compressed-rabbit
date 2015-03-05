@@ -15,22 +15,27 @@ int main(int argc, char **argv)
     int sockfd, compress;
     amqp_connection_state_t conn;
     amqp_bytes_t queuename;
-    const char* message;
+    char message[COMP_BUF_SIZE];
     char *type, *cmpBuf;
     int message_bytes, cmpBytes;
     LZ4_stream_t* const lz4_stream = LZ4_createStream();
     struct timespec tik, tok, tic, toc;
     double diff;
+    char *file_pathname = NULL;
+    FILE *fp;
 
     if (argc < 4) {
-        printf("Usage: ./sender <queuename> <type> <message>\n"
+        printf("Usage: ./sender <queuename> <type> <message-file>\n"
                "    type : lz4/plain\n");
         exit(1);
     }
 
     queuename = amqp_cstring_bytes(argv[1]);
     type = argv[2];
-    message = argv[3];
+    file_pathname = argv[3];
+
+    fp = fopen(file_pathname, "r");
+    fscanf(fp, "%s", message);
     message_bytes = strlen(message) + 1;
 
     printf(" <-- Message is: '%s' with size %d (= %d + \\0)\n", message,
