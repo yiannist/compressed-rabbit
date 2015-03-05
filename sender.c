@@ -50,7 +50,6 @@ int main(int argc, char **argv)
 
         clock_gettime(CLOCK_REALTIME, &toc);
         diff = (toc.tv_sec - tic.tv_sec) + (toc.tv_nsec - tic.tv_nsec)/1E9;
-        printf(" [i] Compression latency was: %lf\n", diff);
     } else {
         cmpBuf = (char *) message;
         cmpBytes = message_bytes;
@@ -105,9 +104,11 @@ int main(int argc, char **argv)
 		    );
     clock_gettime(CLOCK_REALTIME, &tok);
 
+    printf(" [x] Sent '%s' to '%s' queue\n", message, (char *) queuename.bytes);
+    printf(" [i] Compression latency was: %lf\n", diff);
+
     diff = (tok.tv_sec - tik.tv_sec) + (tok.tv_nsec - tik.tv_nsec)/1E9;
 
-    printf(" [x] Sent '%s' to '%s' queue\n", message, (char *) queuename.bytes);
     printf(" [i] Communication latency was: %lf\n", diff);
 
     die_on_amqp_error(amqp_channel_close(conn, 1, AMQP_REPLY_SUCCESS),
