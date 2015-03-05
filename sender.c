@@ -38,15 +38,17 @@ int main(int argc, char **argv)
     fscanf(fp, "%s", message);
     message_bytes = strlen(message) + 1;
 
+/*
     printf(" <-- Message is: '%s' with size %d (= %d + \\0)\n", message,
            message_bytes, message_bytes - 1);
     printf(" <-- Raw data is ");
     print_hex_buffer((char *) message, message_bytes);
     printf(" with size %d\n", message_bytes);
+*/
 
     compress = !strcmp("lz4", type);
     if (compress) {
-        printf(" <-- Data should be compressed.\n");
+        //printf(" <-- Data should be compressed.\n");
         cmpBuf = malloc(LZ4_COMPRESSBOUND(COMP_BUF_SIZE));
 
         clock_gettime(CLOCK_REALTIME, &tic);
@@ -95,9 +97,11 @@ int main(int argc, char **argv)
     data.bytes = cmpBuf;
     data.len = cmpBytes;
 
+/*
     printf(" <-- AMQP raw data is ");
     print_hex_buffer(data.bytes, data.len);
     printf(" with size %lu\n", data.len);
+*/
 
     amqp_frame_t decoded_frame;
     clock_gettime(CLOCK_REALTIME, &tik);
@@ -113,7 +117,7 @@ int main(int argc, char **argv)
     amqp_simple_wait_frame(conn, &decoded_frame);
     clock_gettime(CLOCK_REALTIME, &tok);
 
-    printf(" [x] Sent '%s' to '%s' queue\n", message, (char *) queuename.bytes);
+    //printf(" [x] Sent '%s' to '%s' queue\n", message, (char *) queuename.bytes);
 
     // Handling ACK as suggested:
     // https://groups.google.com/forum/#!topic/rabbitmq-users/LOEBwpsE0kA
