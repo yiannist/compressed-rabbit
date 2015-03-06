@@ -145,18 +145,20 @@ int main(int argc, char **argv)
              * the a->delivery_tag is the message serial being acknowledged.
              * if a->multiple != 0, that means all messages up-to-and-including that message
              * serial are being acknowledged */
-            printf(" [i] Message ACK'd\n");
+            //printf(" [i] Message ACK'd\n");
         } else {
             /* You've received a different method, probably not what you want */
             printf(" [i] Strange method received\n");
         }
     }
 
-    printf(" [i] Compression latency was: %lf\n", diff);
+    //printf(" [i] Compression latency was: %lf\n", diff);
+    printf("%lf ", diff);
 
     diff = (tok.tv_sec - tik.tv_sec) + (tok.tv_nsec - tik.tv_nsec)/1E9;
 
-    printf(" [i] Communication latency was: %lf\n", diff);
+    //printf(" [i] Communication latency was: %lf\n", diff);
+    printf("%lf ", diff);
 
     die_on_amqp_error(amqp_channel_close(conn, 1, AMQP_REPLY_SUCCESS),
                       "Closing channel");
